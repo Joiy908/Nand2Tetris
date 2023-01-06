@@ -10,87 +10,89 @@ import java.util.Iterator;
  * @date 2022/12/31
  */
 
-public class Parser implements Iterable<Command>, Iterator<Command>{
-
-    private BufferedReader in;
-    private String currLine;
-    private Command currCommand;
+public class Parser implements Iterable<Command> {
 
 
+    private static class CommandIterator implements Iterator<Command> {
+        private BufferedReader in;
+        private String currLine;
+        private Command currCommand;
 
-    /**
-     * remove Comment and white space
-     * assume line != null
-     * @return null if line contains no command
-     */
-    private String rmComment(String line) {
-        if (line.isEmpty()){
-            return null;
-        }
-        // else
-        line = line.trim();
-        if (line.isEmpty()) {
-            return null;
-        }
-        else if (line.charAt(0) == '/')
-            return null;
-        else { // has command
-            int pos = line.indexOf('/');
-            if (pos == -1) {
-                return line;
-            } else {
-                return line.substring(0, pos).trim();
+        public CommandIterator(File input) {
+            try {
+                in = new BufferedReader(new FileReader(input));
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
-    }
 
-    /**
-     * parse currLine to currComment
-     */
-    private void advance() {
-        currCommand = new Command(currLine.split(" "));
-    }
-
-
-    public Parser(File input) {
-        try {
-            in = new BufferedReader(new FileReader(input));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        /**
+         * remove Comment and white space
+         * assume line != null
+         * @return null if line contains no command
+         */
+        private String rmComment(String line) {
+            if (line.isEmpty()){
+                return null;
+            }
+            // else
+            line = line.trim();
+            if (line.isEmpty()) {
+                return null;
+            }
+            else if (line.charAt(0) == '/')
+                return null;
+            else { // has command
+                int pos = line.indexOf('/');
+                if (pos == -1) {
+                    return line;
+                } else {
+                    return line.substring(0, pos).trim();
+                }
+            }
         }
+
+        /**
+         * parse currLine to currComment
+         */
+        private void advance() {
+            currCommand = new Command(currLine.split(" "));
+        }
+
+        @Override
+        public boolean hasNext() {
+            try {
+                while ((currLine = in.readLine()) != null) {
+                    currLine = rmComment(currLine);
+                    if (currLine == null)
+                        continue;
+                    advance();
+                    return true;
+                }
+                // if it runs out of Commands, close the Reader
+                in.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+
+        @Override
+        public Command next() {
+            return currCommand;
+        }
+
     }
 
-    public void close() {
-        try {
-            in.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    private final File in;
+    public Parser(File in) {
+        this.in = in;
     }
 
     @Override
     public Iterator<Command> iterator() {
-        return this;
+        return new CommandIterator(in);
     }
 
-    @Override
-    public boolean hasNext() {
-        try {
-            while ((currLine = in.readLine()) != null) {
-                currLine = rmComment(currLine);
-                if (currLine == null)
-                    continue;
-                advance();
-                return true;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
 
-    @Override
-    public Command next() {
-        return currCommand;
-    }
 }
