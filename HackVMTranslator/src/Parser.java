@@ -1,6 +1,5 @@
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Iterator;
@@ -11,7 +10,6 @@ import java.util.Iterator;
  */
 
 public class Parser implements Iterable<Command> {
-
 
     private static class CommandIterator implements Iterator<Command> {
         private BufferedReader in;
@@ -24,6 +22,29 @@ public class Parser implements Iterable<Command> {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+
+        @Override
+        public boolean hasNext() {
+            try {
+                while ((currLine = in.readLine()) != null) {
+                    currLine = rmComment(currLine);
+                    if (currLine == null)
+                        continue;
+                    advance();
+                    return true;
+                }
+                // if it runs out of Commands, close the Reader
+                in.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+
+        @Override
+        public Command next() {
+            return currCommand;
         }
 
         /**
@@ -59,29 +80,6 @@ public class Parser implements Iterable<Command> {
             currCommand = new Command(currLine.split(" "));
         }
 
-        @Override
-        public boolean hasNext() {
-            try {
-                while ((currLine = in.readLine()) != null) {
-                    currLine = rmComment(currLine);
-                    if (currLine == null)
-                        continue;
-                    advance();
-                    return true;
-                }
-                // if it runs out of Commands, close the Reader
-                in.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return false;
-        }
-
-        @Override
-        public Command next() {
-            return currCommand;
-        }
-
     }
 
     private final File in;
@@ -93,6 +91,5 @@ public class Parser implements Iterable<Command> {
     public Iterator<Command> iterator() {
         return new CommandIterator(in);
     }
-
 
 }

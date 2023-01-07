@@ -1,5 +1,4 @@
 import java.io.File;
-import java.util.Iterator;
 
 /**
  * @author Joiy908
@@ -8,8 +7,6 @@ import java.util.Iterator;
 
 public class Main {
     public static void main(String[] args) {
-
-
 
         File input = new File(args[0]);
         if (!(input.exists() && input.isFile())) {
@@ -21,15 +18,14 @@ public class Main {
 
         Parser p = new Parser(input);
         final CodeWriter writer = new CodeWriter(out);
+
         for (Command command : p) {
-//            System.out.println(command);
             writer.write(command);
         }
-
-        p.close();
         writer.close();
     }
 
+    // Xxx.vm to Xxx.asm
     private static String getSAMPath(String vmPath) {
         final int pos = vmPath.lastIndexOf('.');
         String rst = vmPath.substring(0, pos);

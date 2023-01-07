@@ -13,18 +13,18 @@ import java.nio.charset.StandardCharsets;
 public class CodeWriter {
     private FileOutputStream out;
     private final Charset OUT_FILE_CHARSET = StandardCharsets.US_ASCII;
-    private String HackClassName;
+    private final String HackClassName;
     private int staticCount;
 
     public CodeWriter(File f) {
         try {
             out = new FileOutputStream(f);
-            final int pos = f.getName().indexOf('.');
-            HackClassName = f.getName().substring(0, pos);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-
+        // get HackClassName
+        final int pos = f.getName().indexOf('.');
+        HackClassName = f.getName().substring(0, pos);
     }
 
     public void write(Command command) {
@@ -47,16 +47,24 @@ public class CodeWriter {
         }
     }
 
+    public void close() {
+        try {
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void writePush(String seg, String i) throws IOException {
         if (Command.COMMON_SEGMENT.contains(seg)) {
             letR13EqAddr(seg, i);
             decrSP();
             letGoLabelXEqGoLabelY("R13", "SP");
         } else if (seg.equals("constant")) {
-            incrSP();
             // *SP = i
             String lines = "@" + i + "\nD=A\n@SP\nA=M\nM=D\n";
             out.write(lines.getBytes(OUT_FILE_CHARSET));
+            incrSP();
         } else if (seg.equals("static")) {
             // *SP = @Xxx.i
             letGoLabelXEqAtY("SP", HackClassName + "." + i);
@@ -65,7 +73,7 @@ public class CodeWriter {
             int addr = 5 + Integer.parseInt(i);
             letGoLabelXEqAtY("SP", String.valueOf(addr));
             incrSP();
-        } else if (seg.equals("pointer")){
+        } else if (seg.equals("pointer")) {
             if (i.equals("0")) {
                 // "0" = this = R[3]
                 letGoLabelXEqAtY("SP", "R3");
@@ -78,12 +86,11 @@ public class CodeWriter {
     }
 
     private void writePop(String seg, String i) throws IOException {
-        // todo
         if (Command.COMMON_SEGMENT.contains(seg)) {
             letR13EqAddr(seg, i);
             letGoLabelXEqGoLabelY("SP", "R13");
             incrSP();
-        }else if (seg.equals("static")) {
+        } else if (seg.equals("static")) {
             decrSP();
             // @Xxx.i = *SP
             letAtXEqGoLabelY(HackClassName + "." + i, "SP");
@@ -92,7 +99,7 @@ public class CodeWriter {
             int addr = 5 + Integer.parseInt(i);
             // @5+i = *SP
             letAtXEqGoLabelY(String.valueOf(addr), "SP");
-        } else if (seg.equals("pointer")){
+        } else if (seg.equals("pointer")) {
             decrSP();
             if (i.equals("0")) {
                 // "0" = this = R[3]
@@ -104,20 +111,18 @@ public class CodeWriter {
         } else throw new IllegalArgumentException("seg = " + seg);
     }
 
-    private void writeArithmetic(String name) {
-        // todo
+    private void writeArithmetic(String name) throws IOException {
+        if (Command.BINARY_OPERATIONS.containsKey(name)) {
+            writeBinaryOperation(name);
+        } else if (name.equals("neg") || name.equals("not")) {
+            writeUnaryOperation(name);
+        } else if (Command.COMPARE_OPERATIONS.containsKey(name)) {
+            writeCompareOperation(name);
+        } else throw new IllegalArgumentException("command.name =" + name);
 
     }
 
-    public void close() {
-        try {
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    // ========== helper methods: asm blocks
+    // ========== helper methods: asm basic blocks
     private void incrSP() throws IOException {
         out.write("@SP\nM=M+1\n".getBytes(OUT_FILE_CHARSET));
     }
@@ -155,7 +160,7 @@ public class CodeWriter {
 
     // *labelX=*labelY
     private void letGoLabelXEqGoLabelY(String labelX, String labelY) throws IOException {
-        String lines = "@" + labelY + "\nA=M\nD=M\n@" + labelX + "\nA=M\nM=D";
+        String lines = "@" + labelY + "\nA=M\nD=M\n@" + labelX + "\nA=M\nM=D\n";
         out.write(lines.getBytes(OUT_FILE_CHARSET));
     }
 
@@ -167,8 +172,56 @@ public class CodeWriter {
 
     // @X = *Y
     private void letAtXEqGoLabelY(String X, String labelY) throws IOException {
-        String lines = "@"+ labelY + "\nA=M\nD=M\n@" + X + "\nM=D";
+        String lines = "@" + labelY + "\nA=M\nD=M\n@" + X + "\nM=D\n";
         out.write(lines.getBytes(OUT_FILE_CHARSET));
     }
 
+
+    // ========== Arithmetic blocks
+
+    // assume Command.BINARY_OPERATIONS.containsKey(name)
+    private void writeBinaryOperation(String name) throws IOException {
+        Character symbol = Command.BINARY_OPERATIONS.get(name);
+        decrSP();
+        letAtXEqGoLabelY("R13", "SP");
+        decrSP();
+        String lines = "@SP\nA=M\nD=M\n@R13\nM=D" + symbol + "M\n";
+        out.write(lines.getBytes(OUT_FILE_CHARSET));
+        letGoLabelXEqAtY("SP", "R13");
+        incrSP();
+    }
+
+    // assume name is "neg" or "not"
+    private void writeUnaryOperation(String name) throws IOException {
+        char symbol;
+        if (name.equals("neg"))
+            symbol = '-';
+        else if (name.equals("not"))
+            symbol = '!';
+        else throw new IllegalArgumentException("command.name =" + name);
+
+        decrSP();
+        String lines = "@SP\nA=M\nM=" + symbol + "M\n";
+        out.write(lines.getBytes(OUT_FILE_CHARSET));
+        incrSP();
+    }
+
+    // assume Command.COMPARE_OPERATIONS.containsKey(name)
+    private void writeCompareOperation(String name) throws IOException {
+        String pushTrueLabel = HackClassName.toUpperCase() + "_PUSH_TURE_" + staticCount;
+        String jumpOperation = Command.COMPARE_OPERATIONS.get(name);
+        String endOfCompareLabel = HackClassName.toUpperCase() + "_END_COMP_" + staticCount;
+        ++staticCount;
+
+        decrSP();
+        letAtXEqGoLabelY("R13", "SP");
+        decrSP();
+        String lines = "@SP\nA=M\nD=M\n@R13\nD=M-D\n@" + pushTrueLabel +
+                "\nD;" + jumpOperation +
+                "\n@SP\nA=M\nM=0\n@" + endOfCompareLabel + "\n0;JMP\n("
+                + pushTrueLabel + ")\n@SP\nA=M\nM=-1\n(" + endOfCompareLabel
+                // incrSP;
+                + ")\n@SP\nM=M+1\n";
+        out.write(lines.getBytes(OUT_FILE_CHARSET));
+    }
 }

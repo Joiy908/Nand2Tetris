@@ -1,4 +1,5 @@
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -12,11 +13,25 @@ public class Command {
         PUSH,
         POP
     }
-    public final static List<String> ARITHMETIC_COMMANDS = Arrays.asList("add", "sub", "ng",
+
+    public final static List<String> ARITHMETIC_COMMANDS = Arrays.asList("add", "sub", "neg",
             "and", "or", "not", "eq", "gt", "lt");
 
     public final static List<String> COMMON_SEGMENT = Arrays.asList("local", "argument", "this", "that");
 
+
+    public final static HashMap<String, Character> BINARY_OPERATIONS = new HashMap<String, Character>() {{
+        put("add", '+');
+        put("sub", '-');
+        put("and", '&');
+        put("or", '|');
+    }};
+
+    public final static HashMap<String, String> COMPARE_OPERATIONS = new HashMap<String, String>() {{
+        put("eq", "JEQ");
+        put("lt", "JLT");
+        put("gt", "JGT");
+    }};
 
     public CommandType type;
     public String name;
@@ -24,7 +39,7 @@ public class Command {
     public String arg2;
 
     public Command(String[] tokens) {
-        if(tokens.length == 0)
+        if (tokens.length == 0)
             throw new IllegalArgumentException(Arrays.toString(tokens) + " is illegal");
         setNameAndType(tokens[0]);
         switch (tokens.length) {
@@ -49,7 +64,7 @@ public class Command {
         } else if (ARITHMETIC_COMMANDS.contains(name)) {
             type = CommandType.ARITHMETIC;
         } else {
-            throw new IllegalArgumentException(name + "is an illegal command name.");
+            throw new IllegalArgumentException(name + " is an illegal command name.");
         }
     }
 
