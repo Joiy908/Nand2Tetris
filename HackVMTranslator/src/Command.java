@@ -20,11 +20,11 @@ public class Command {
     public final static List<String> COMMON_SEGMENT = Arrays.asList("local", "argument", "this", "that");
 
 
-    public final static HashMap<String, Character> BINARY_OPERATIONS = new HashMap<String, Character>() {{
-        put("add", '+');
-        put("sub", '-');
-        put("and", '&');
-        put("or", '|');
+    public final static HashMap<String, String> BINARY_OPERATIONS = new HashMap<String, String>() {{
+        put("add", "D+M");
+        put("sub", "M-D");
+        put("and", "D&M");
+        put("or", "D|M");
     }};
 
     public final static HashMap<String, String> COMPARE_OPERATIONS = new HashMap<String, String>() {{

@@ -58,8 +58,8 @@ public class CodeWriter {
     private void writePush(String seg, String i) throws IOException {
         if (Command.COMMON_SEGMENT.contains(seg)) {
             letR13EqAddr(seg, i);
-            decrSP();
-            letGoLabelXEqGoLabelY("R13", "SP");
+            letGoLabelXEqGoLabelY("SP", "R13");
+            incrSP();
         } else if (seg.equals("constant")) {
             // *SP = i
             String lines = "@" + i + "\nD=A\n@SP\nA=M\nM=D\n";
@@ -88,8 +88,8 @@ public class CodeWriter {
     private void writePop(String seg, String i) throws IOException {
         if (Command.COMMON_SEGMENT.contains(seg)) {
             letR13EqAddr(seg, i);
-            letGoLabelXEqGoLabelY("SP", "R13");
-            incrSP();
+            decrSP();
+            letGoLabelXEqGoLabelY("R13", "SP");
         } else if (seg.equals("static")) {
             decrSP();
             // @Xxx.i = *SP
@@ -181,14 +181,11 @@ public class CodeWriter {
 
     // assume Command.BINARY_OPERATIONS.containsKey(name)
     private void writeBinaryOperation(String name) throws IOException {
-        Character symbol = Command.BINARY_OPERATIONS.get(name);
-        decrSP();
-        letAtXEqGoLabelY("R13", "SP");
-        decrSP();
-        String lines = "@SP\nA=M\nD=M\n@R13\nM=D" + symbol + "M\n";
+        String expression = Command.BINARY_OPERATIONS.get(name);
+
+        String lines = "@SP\nAM=M-1\nD=M\n@SP\nAM=M-1\nD=" + expression
+                + "\nM=D\n@SP\nM=M+1\n";
         out.write(lines.getBytes(OUT_FILE_CHARSET));
-        letGoLabelXEqAtY("SP", "R13");
-        incrSP();
     }
 
     // assume name is "neg" or "not"
@@ -200,8 +197,7 @@ public class CodeWriter {
             symbol = '!';
         else throw new IllegalArgumentException("command.name =" + name);
 
-        decrSP();
-        String lines = "@SP\nA=M\nM=" + symbol + "M\n";
+        String lines = "@SP\nAM=M-1\nM=" + symbol + "M\n";
         out.write(lines.getBytes(OUT_FILE_CHARSET));
         incrSP();
     }
@@ -213,10 +209,7 @@ public class CodeWriter {
         String endOfCompareLabel = HackClassName.toUpperCase() + "_END_COMP_" + staticCount;
         ++staticCount;
 
-        decrSP();
-        letAtXEqGoLabelY("R13", "SP");
-        decrSP();
-        String lines = "@SP\nA=M\nD=M\n@R13\nD=M-D\n@" + pushTrueLabel +
+        String lines = "@SP\nAM=M-1\nD=M\n@SP\nAM=M-1\nD=M-D\n@" + pushTrueLabel +
                 "\nD;" + jumpOperation +
                 "\n@SP\nA=M\nM=0\n@" + endOfCompareLabel + "\n0;JMP\n("
                 + pushTrueLabel + ")\n@SP\nA=M\nM=-1\n(" + endOfCompareLabel
