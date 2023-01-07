@@ -56,7 +56,6 @@ public class CodeWriter {
     }
 
     private void writePush(String seg, String i) throws IOException {
-        // todo: speed up special case : i=0
         if (Command.COMMON_SEGMENT.containsKey(seg)) {
             letGoSPEqGoAddr(seg, i);
             incrSP();
@@ -86,10 +85,17 @@ public class CodeWriter {
     }
 
     private void writePop(String seg, String i) throws IOException {
-        // todo: speed up special case : i=0
         if (Command.COMMON_SEGMENT.containsKey(seg)) {
-            letR13EqAddr(seg, i);
-            decrSPAndLetGoLabelXEqGoSP("R13");
+            if (i.equals("0")) {
+                String label = Command.COMMON_SEGMENT.get(seg);
+                // SP--, *label=*SP
+                String lines = "@SP\nAM=M-1\nD=M\n@" + label + "\nA=M\nM=D\n";
+                out.write(lines.getBytes(OUT_FILE_CHARSET));
+            } else {
+                letR13EqAddr(seg, i);
+                decrSPAndLetGoLabelXEqGoSP("R13");
+            }
+
         } else if (seg.equals("static")) {
             // SP--, @Xxx.i = *SP
             decrSPAndLetAtXEqGoSP(HackClassName + "." + i);
@@ -142,8 +148,14 @@ public class CodeWriter {
      */
     private void letGoSPEqGoAddr(String seg, String i) throws IOException {
         String label = Command.COMMON_SEGMENT.get(seg);
-        // D=i, A=D+@label, *SP=M
-        String lines = "@" + i + "\nD=A\n@" + label + "\nA=D+M\nD=M\n@SP\nA=M\nM=D\n";
+        String lines;
+        if (i.equals("0")) {
+            // *SP = *label
+            lines = "@" + label + "\nA=M\nD=M\n@SP\nA=M\nM=D\n";
+        } else {
+            // D=i, A=D+@label, *SP=M
+            lines = "@" + i + "\nD=A\n@" + label + "\nA=D+M\nD=M\n@SP\nA=M\nM=D\n";
+        }
         out.write(lines.getBytes(OUT_FILE_CHARSET));
     }
 
