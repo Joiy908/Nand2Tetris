@@ -56,9 +56,9 @@ public class CodeWriter {
     }
 
     private void writePush(String seg, String i) throws IOException {
-        if (Command.COMMON_SEGMENT.contains(seg)) {
-            letR13EqAddr(seg, i);
-            letGoLabelXEqGoLabelY("SP", "R13");
+        // todo: speed up special case : i=0
+        if (Command.COMMON_SEGMENT.containsKey(seg)) {
+            letGoSPEqGoAddr(seg, i);
             incrSP();
         } else if (seg.equals("constant")) {
             // *SP = i
@@ -86,27 +86,24 @@ public class CodeWriter {
     }
 
     private void writePop(String seg, String i) throws IOException {
-        if (Command.COMMON_SEGMENT.contains(seg)) {
+        // todo: speed up special case : i=0
+        if (Command.COMMON_SEGMENT.containsKey(seg)) {
             letR13EqAddr(seg, i);
-            decrSP();
-            letGoLabelXEqGoLabelY("R13", "SP");
+            decrSPAndLetGoLabelXEqGoSP("R13");
         } else if (seg.equals("static")) {
-            decrSP();
-            // @Xxx.i = *SP
-            letAtXEqGoLabelY(HackClassName + "." + i, "SP");
+            // SP--, @Xxx.i = *SP
+            decrSPAndLetAtXEqGoSP(HackClassName + "." + i);
         } else if (seg.equals("temp")) {
-            decrSP();
             int addr = 5 + Integer.parseInt(i);
-            // @5+i = *SP
-            letAtXEqGoLabelY(String.valueOf(addr), "SP");
+            // SP--, @5+i = *SP
+            decrSPAndLetAtXEqGoSP(String.valueOf(addr));
         } else if (seg.equals("pointer")) {
-            decrSP();
-            if (i.equals("0")) {
-                // "0" = this = R[3]
-                letAtXEqGoLabelY("R3", "SP");
-            } else if (i.equals("1")) {
-                // "1" = that = R[4]
-                letAtXEqGoLabelY("R4", "SP");
+            if (i.equals("0")) { // "0" = this = R[3]
+                // SP--, @R3 = *SP
+                decrSPAndLetAtXEqGoSP("R3");
+            } else if (i.equals("1")) { // "1" = that = R[4]
+                // SP--, @R4 = *SP
+                decrSPAndLetAtXEqGoSP("R4");
             } else throw new IllegalArgumentException("pointer i = " + i);
         } else throw new IllegalArgumentException("seg = " + seg);
     }
@@ -127,40 +124,33 @@ public class CodeWriter {
         out.write("@SP\nM=M+1\n".getBytes(OUT_FILE_CHARSET));
     }
 
-    private void decrSP() throws IOException {
-        out.write("@SP\nM=M-1\n".getBytes(OUT_FILE_CHARSET));
-    }
-
     /**
+     * assume Command.COMMON_SEGMENT.containsKey(seg)
      * use R13 as address temp variable
      * R13 = *seg_label + i, like R13 = *LCL + i
      */
     private void letR13EqAddr(String seg, String i) throws IOException {
-        String label;
-        switch (seg) {
-            case "local":
-                label = "LCL";
-                break;
-            case "argument":
-                label = "ARG";
-                break;
-            case "this":
-                label = "THIS";
-                break;
-            case "that":
-                label = "THAT";
-                break;
-            default:
-                throw new IllegalArgumentException();
-        }
+        String label = Command.COMMON_SEGMENT.get(seg);
         // D=i, D=D+*label, *R13=D
         String lines = "@" + i + "\nD=A\n@" + label + "\nD=D+M\n@R13\nM=D\n";
         out.write(lines.getBytes(OUT_FILE_CHARSET));
     }
 
-    // *labelX=*labelY
-    private void letGoLabelXEqGoLabelY(String labelX, String labelY) throws IOException {
-        String lines = "@" + labelY + "\nA=M\nD=M\n@" + labelX + "\nA=M\nM=D\n";
+    /**
+     * assume Command.COMMON_SEGMENT.containsKey(seg)
+     * *SP=*(seg_label + i)
+     */
+    private void letGoSPEqGoAddr(String seg, String i) throws IOException {
+        String label = Command.COMMON_SEGMENT.get(seg);
+        // D=i, A=D+@label, *SP=M
+        String lines = "@" + i + "\nD=A\n@" + label + "\nA=D+M\nD=M\n@SP\nA=M\nM=D\n";
+        out.write(lines.getBytes(OUT_FILE_CHARSET));
+    }
+
+
+    // SP--, *labelX = *SP
+    private void decrSPAndLetGoLabelXEqGoSP(String labelX) throws IOException {
+        String lines = "@SP\nAM=M-1\nD=M\n@" + labelX + "\nA=M\nM=D\n";
         out.write(lines.getBytes(OUT_FILE_CHARSET));
     }
 
@@ -170,12 +160,12 @@ public class CodeWriter {
         out.write(lines.getBytes(OUT_FILE_CHARSET));
     }
 
-    // @X = *Y
-    private void letAtXEqGoLabelY(String X, String labelY) throws IOException {
-        String lines = "@" + labelY + "\nA=M\nD=M\n@" + X + "\nM=D\n";
+
+    // sp--, @X = *sp
+    private void decrSPAndLetAtXEqGoSP(String X) throws IOException {
+        String lines = "@SP\nAM=M-1\nD=M\n@" + X + "\nM=D\n";
         out.write(lines.getBytes(OUT_FILE_CHARSET));
     }
-
 
     // ========== Arithmetic blocks
 

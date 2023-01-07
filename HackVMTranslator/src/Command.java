@@ -17,7 +17,12 @@ public class Command {
     public final static List<String> ARITHMETIC_COMMANDS = Arrays.asList("add", "sub", "neg",
             "and", "or", "not", "eq", "gt", "lt");
 
-    public final static List<String> COMMON_SEGMENT = Arrays.asList("local", "argument", "this", "that");
+    public final static HashMap<String, String> COMMON_SEGMENT = new HashMap<String, String>() {{
+        put("local", "LCL");
+        put("argument", "ARG");
+        put("this", "THIS");
+        put("that", "THAT");
+    }};
 
 
     public final static HashMap<String, String> BINARY_OPERATIONS = new HashMap<String, String>() {{
