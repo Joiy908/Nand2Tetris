@@ -1,7 +1,4 @@
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -10,7 +7,8 @@ import java.nio.charset.StandardCharsets;
  * @date 2022/12/31
  */
 
-public class CodeWriter {
+// CodeWriter need to explicitly close
+public class CodeWriter implements Closeable {
     private FileOutputStream out;
     private final Charset OUT_FILE_CHARSET = StandardCharsets.US_ASCII;
     private final String HackClassName;
@@ -47,12 +45,9 @@ public class CodeWriter {
         }
     }
 
-    public void close() {
-        try {
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    @Override
+    public void close() throws IOException {
+        out.close();
     }
 
     private void writePush(String seg, String i) throws IOException {

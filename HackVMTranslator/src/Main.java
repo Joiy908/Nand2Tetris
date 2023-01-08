@@ -1,4 +1,5 @@
 import java.io.File;
+import java.io.IOException;
 
 /**
  * @author Joiy908
@@ -17,12 +18,15 @@ public class Main {
         File out = new File(getSAMPath(args[0]));
 
         Parser p = new Parser(input);
-        final CodeWriter writer = new CodeWriter(out);
 
-        for (Command command : p) {
-            writer.write(command);
+        try (CodeWriter writer = new CodeWriter(out);
+        Parser.CommandIterator itr = p.commandIterator()){
+            while(itr.hasNext()) {
+                writer.write(itr.next());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        writer.close();
     }
 
     // Xxx.vm to Xxx.asm

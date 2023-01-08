@@ -1,7 +1,4 @@
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.Iterator;
 
 /**
@@ -11,7 +8,8 @@ import java.util.Iterator;
 
 public class Parser implements Iterable<Command> {
 
-    private static class CommandIterator implements Iterator<Command> {
+    // CommandIterator need to explicitly close
+    public static class CommandIterator implements Iterator<Command>, Closeable {
         private BufferedReader in;
         private String currLine;
         private Command currCommand;
@@ -34,8 +32,6 @@ public class Parser implements Iterable<Command> {
                     advance();
                     return true;
                 }
-                // if it runs out of Commands, close the Reader
-                in.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -47,6 +43,10 @@ public class Parser implements Iterable<Command> {
             return currCommand;
         }
 
+        @Override
+        public void close() throws IOException {
+            in.close();
+        }
         /**
          * remove Comment and white space
          * assume line != null
@@ -89,6 +89,10 @@ public class Parser implements Iterable<Command> {
 
     @Override
     public Iterator<Command> iterator() {
+        return new CommandIterator(in);
+    }
+
+    public CommandIterator commandIterator() {
         return new CommandIterator(in);
     }
 
