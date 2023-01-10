@@ -30,8 +30,9 @@ public class CodeWriter implements Closeable {
     }
 
     public void writeInit() throws IOException{
-        String lines = "@256\nD=A\n@SP\nM=D\n@Sys.init\n0;JMP\n";
+        String lines = "@256\nD=A\n@SP\nM=D\n";
         out.write(lines.getBytes(OUT_FILE_CHARSET));
+        writeCall("Sys.init", "0");
     }
 
     public void setClassName(String name) {
@@ -57,7 +58,7 @@ public class CodeWriter implements Closeable {
                     writeFunction(command);
                     break;
                 default:
-                    throw new IllegalStateException("Unexpected value: " + command.type);
+                    throw new IllegalStateException("Unexpected type: " + command.type);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -140,6 +141,8 @@ public class CodeWriter implements Closeable {
     }
 
     private void writeBranching(String name, String label) throws IOException {
+        if (currFuncName != null)
+            label = currFuncName + '$' + label;
         String lines;
         switch (name) {
             case "label":
@@ -160,8 +163,9 @@ public class CodeWriter implements Closeable {
     private void writeFunction(Command command) throws IOException {
         switch (command.name) {
             case "call":
+                writeCall(command.arg1, command.arg2);
                 ++currCallReturnCount;
-                throw new UnsupportedOperationException("call is not implemented yet.");
+                break;
             case "function":
                 currFuncName = command.arg1;
                 currCallReturnCount = 0;
@@ -173,6 +177,23 @@ public class CodeWriter implements Closeable {
             default:
                 throw new IllegalArgumentException("command.name =" + command.name);
         }
+    }
+
+    private void writeCall(String calledFuncName, String nArgs) throws IOException {
+        String returnAddrLabel = currFuncName + "$ret." + currCallReturnCount;
+        String lines = "@" + returnAddrLabel + "\nD=A\n@SP\nA=M\nM=D\n"
+                // push LCL/ARG...
+                + "@LCL\nD=M\n@SP\nAM=M+1\nM=D\n"
+                + "@ARG\nD=M\n@SP\nAM=M+1\nM=D\n"
+                + "@THIS\nD=M\n@SP\nAM=M+1\nM=D\n"
+                + "@THAT\nD=M\n@SP\nAM=M+1\nM=D\n"
+                // SP++, ARG = SP-(5+nArgs)
+                + "@" + (5+Integer.parseInt(nArgs))
+                + "\nD=A\n@SP\nM=M+1\nD=M-D\n@ARG\nM=D\n"
+                + "@SP\nD=M\n@LCL\nM=D\n"
+                + "@" + calledFuncName + "\n0;JMP\n"
+                + "(" + returnAddrLabel + ")\n";
+        out.write(lines.getBytes(OUT_FILE_CHARSET));
     }
 
     // assume currFuncName is updated to funcName

@@ -7,7 +7,7 @@ import java.io.IOException;
  */
 
 public class Main {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args){
 
         File input = new File(args[0]);
         if (!(input.exists())) {
@@ -35,6 +35,8 @@ public class Main {
                     }
                 }
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
