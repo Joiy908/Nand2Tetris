@@ -13,6 +13,8 @@ public class CodeWriter implements Closeable {
     private final Charset OUT_FILE_CHARSET = StandardCharsets.US_ASCII;
     private final String HackClassName;
     private int staticCount;
+    private String currFuncName;
+    private int currCallReturnCount;
 
     public CodeWriter(File f) {
         try {
@@ -23,6 +25,7 @@ public class CodeWriter implements Closeable {
         // get HackClassName
         final int pos = f.getName().indexOf('.');
         HackClassName = f.getName().substring(0, pos);
+        currCallReturnCount = 0;
     }
 
     public void write(Command command) {
@@ -39,6 +42,9 @@ public class CodeWriter implements Closeable {
                     break;
                 case BRANCHING:
                     writeBranching(command.name, command.arg1);
+                    break;
+                case FUNCTION:
+                    writeFunction(command);
                     break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + command.type);
@@ -138,6 +144,57 @@ public class CodeWriter implements Closeable {
             default:
                 throw new IllegalArgumentException("command.name =" + name);
         }
+        out.write(lines.getBytes(OUT_FILE_CHARSET));
+    }
+
+    private void writeFunction(Command command) throws IOException {
+        switch (command.name) {
+            case "call":
+                ++currCallReturnCount;
+                throw new UnsupportedOperationException("call is not implemented yet.");
+            case "function":
+                currFuncName = command.arg1;
+                currCallReturnCount = 0;
+                writeFunc(command.arg1, command.arg2);
+                break;
+            case "return":
+                writeReturn();
+                break;
+            default:
+                throw new IllegalArgumentException("command.name =" + command.name);
+        }
+    }
+
+    // assume currFuncName is updated to funcName
+    private void writeFunc(String funcName, String mVar) throws IOException {
+        StringBuilder lines = new StringBuilder("(" + funcName + ")\n");
+        int m = Integer.parseInt(mVar);
+        if (m != 0) {
+            for (int i = 0; i < m; i++) {
+                if (i == 0) lines.append("@SP\nA=M\nM=0\n");
+                else lines.append("M=0\n");
+                lines.append("@SP\nAM=M+1\n");
+            }
+        }
+        out.write(lines.toString().getBytes(OUT_FILE_CHARSET));
+    }
+
+    // set R13 as endFrame and R14 as retAddr
+    private void writeReturn() throws IOException {
+        // R13 = LCL; R14 = *(R13-5)
+        String lines = "@LCL\nD=M\n@R13\nM=D\n@5\nD=A\n@R13\nA=M-D\nD=M\n@R14\nM=D\n"
+                // *ARG=pop() => *ARG=*(--SP)
+                + "@SP\nAM=M-1\nD=M\n@ARG\nA=M\nM=D\n"
+                // SP = ARG + 1
+                + "@ARG\nD=M\n@SP\nM=D+1\n"
+                // THAT = *(R13-1)
+                + "@R13\nA=M-1\nD=M\n@THAT\nM=D\n"
+                // R13--; THIS = *(R13-1) # THAT = *(R13-2)
+                + "@R13\nM=M-1\nA=M-1\nD=M\n@THIS\nM=D\n"
+                + "@R13\nM=M-1\nA=M-1\nD=M\n@ARG\nM=D\n"
+                + "@R13\nM=M-1\nA=M-1\nD=M\n@LCL\nM=D\n"
+                // goto R14
+                + "@R14\nA=M\n0;JMP\n";
         out.write(lines.getBytes(OUT_FILE_CHARSET));
     }
 
