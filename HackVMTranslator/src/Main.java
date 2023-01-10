@@ -7,32 +7,54 @@ import java.io.IOException;
  */
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
         File input = new File(args[0]);
-        if (!(input.exists() && input.isFile())) {
-            System.out.println("Fail to open the file: " + args[0]);
+        if (!(input.exists())) {
+            System.out.println("Fail to open the file/dir: " + args[0]);
             return ;
         }
 
-        File out = new File(getSAMPath(args[0]));
+        final File[] vmFiles;
+        if (input.isDirectory()) {
+            vmFiles = input.listFiles((dir, name) -> name.matches(".*\\.vm$"));
+        } else { // input.isFile()
+            vmFiles = new File[] {input};
+        }
 
-        Parser p = new Parser(input);
-
-        try (CodeWriter writer = new CodeWriter(out);
-        Parser.CommandIterator itr = p.commandIterator()){
-            while(itr.hasNext()) {
-                writer.write(itr.next());
+        File out = new File(getSAMPath(input));
+        try(CodeWriter writer = new CodeWriter(out)) {
+            assert vmFiles != null;
+            writer.writeInit();
+            for (File vmFile : vmFiles) {
+                Parser p = new Parser(vmFile);
+                writer.setClassName(getClassName(vmFile.getName()));
+                try (Parser.CommandIterator itr = p.commandIterator()){
+                    while(itr.hasNext()) {
+                        writer.write(itr.next());
+                    }
+                }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
-    // Xxx.vm to Xxx.asm
-    private static String getSAMPath(String vmPath) {
-        final int pos = vmPath.lastIndexOf('.');
-        String rst = vmPath.substring(0, pos);
-        return rst+".asm";
+    // Xxx.vm to Xxx
+    private static String getClassName(String name) {
+        final int pos = name.lastIndexOf('.');
+        return name.substring(0, pos);
+    }
+
+    /**
+     * assume in.exists()
+     * Xxx or Xxx.vm to Xxx.asm
+     */
+    private static String getSAMPath(File in) {
+        if(in.isFile()) {
+            final int pos = in.getName().lastIndexOf('.');
+            String rst = in.getName().substring(0, pos);
+            return rst+".asm";
+        } else if (in.isDirectory()) {
+            return in.getPath() + File.separator + in.getName() + ".asm";
+        } else throw new IllegalArgumentException();
     }
 }

@@ -1,4 +1,8 @@
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -11,8 +15,8 @@ import java.nio.charset.StandardCharsets;
 public class CodeWriter implements Closeable {
     private FileOutputStream out;
     private final Charset OUT_FILE_CHARSET = StandardCharsets.US_ASCII;
-    private final String HackClassName;
     private int staticCount;
+    private String currHackClassName;
     private String currFuncName;
     private int currCallReturnCount;
 
@@ -22,10 +26,16 @@ public class CodeWriter implements Closeable {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        // get HackClassName
-        final int pos = f.getName().indexOf('.');
-        HackClassName = f.getName().substring(0, pos);
         currCallReturnCount = 0;
+    }
+
+    public void writeInit() throws IOException{
+        String lines = "@256\nD=A\n@SP\nM=D\n@Sys.init\n0;JMP\n";
+        out.write(lines.getBytes(OUT_FILE_CHARSET));
+    }
+
+    public void setClassName(String name) {
+        currHackClassName = name;
     }
 
     public void write(Command command) {
@@ -70,7 +80,7 @@ public class CodeWriter implements Closeable {
             incrSP();
         } else if (seg.equals("static")) {
             // *SP = @Xxx.i
-            letGoLabelXEqAtY("SP", HackClassName + "." + i);
+            letGoLabelXEqAtY("SP", currHackClassName + "." + i);
             incrSP();
         } else if (seg.equals("temp")) {
             int addr = 5 + Integer.parseInt(i);
@@ -102,7 +112,7 @@ public class CodeWriter implements Closeable {
 
         } else if (seg.equals("static")) {
             // SP--, @Xxx.i = *SP
-            decrSPAndLetAtXEqGoSP(HackClassName + "." + i);
+            decrSPAndLetAtXEqGoSP(currHackClassName + "." + i);
         } else if (seg.equals("temp")) {
             int addr = 5 + Integer.parseInt(i);
             // SP--, @5+i = *SP
@@ -279,9 +289,9 @@ public class CodeWriter implements Closeable {
 
     // assume Command.COMPARE_OPERATIONS.containsKey(name)
     private void writeCompareOperation(String name) throws IOException {
-        String pushTrueLabel = HackClassName.toUpperCase() + "_PUSH_TURE_" + staticCount;
+        String pushTrueLabel = currHackClassName.toUpperCase() + "_PUSH_TURE_" + staticCount;
         String jumpOperation = Command.COMPARE_OPERATIONS.get(name);
-        String endOfCompareLabel = HackClassName.toUpperCase() + "_END_COMP_" + staticCount;
+        String endOfCompareLabel = currHackClassName.toUpperCase() + "_END_COMP_" + staticCount;
         ++staticCount;
 
         String lines = "@SP\nAM=M-1\nD=M\n@SP\nAM=M-1\nD=M-D\n@" + pushTrueLabel +
