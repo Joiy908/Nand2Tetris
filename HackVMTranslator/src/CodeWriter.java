@@ -37,6 +37,9 @@ public class CodeWriter implements Closeable {
                 case POP:
                     writePop(command.arg1, command.arg2);
                     break;
+                case BRANCHING:
+                    writeBranching(command.name, command.arg1);
+                    break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + command.type);
             }
@@ -118,6 +121,24 @@ public class CodeWriter implements Closeable {
             writeCompareOperation(name);
         } else throw new IllegalArgumentException("command.name =" + name);
 
+    }
+
+    private void writeBranching(String name, String label) throws IOException {
+        String lines;
+        switch (name) {
+            case "label":
+                lines = "(" + label + ")\n";
+                break;
+            case "if-goto":
+                lines = "@SP\nAM=M-1\nD=M\n@" + label + "\nD;JNE\n";
+                break;
+            case "goto":
+                lines = "@" + label + "\n0;JMP\n";
+                break;
+            default:
+                throw new IllegalArgumentException("command.name =" + name);
+        }
+        out.write(lines.getBytes(OUT_FILE_CHARSET));
     }
 
     // ========== helper methods: asm basic blocks

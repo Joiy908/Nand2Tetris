@@ -11,11 +11,14 @@ public class Command {
     enum CommandType {
         ARITHMETIC,
         PUSH,
-        POP
+        POP,
+        BRANCHING
     }
 
     public final static List<String> ARITHMETIC_COMMANDS = Arrays.asList("add", "sub", "neg",
             "and", "or", "not", "eq", "gt", "lt");
+
+    public final static List<String> BRANCHING_COMMANDS = Arrays.asList("if-goto", "goto", "label");
 
     public final static HashMap<String, String> COMMON_SEGMENT = new HashMap<String, String>() {{
         put("local", "LCL");
@@ -50,6 +53,9 @@ public class Command {
         switch (tokens.length) {
             case 1:
                 return;
+            case 2:
+                arg1 = tokens[1];
+                break;
             case 3:
                 arg1 = tokens[1];
                 arg2 = tokens[2];
@@ -68,6 +74,8 @@ public class Command {
             type = CommandType.POP;
         } else if (ARITHMETIC_COMMANDS.contains(name)) {
             type = CommandType.ARITHMETIC;
+        } else if (BRANCHING_COMMANDS.contains(name)) {
+            type = CommandType.BRANCHING;
         } else {
             throw new IllegalArgumentException(name + " is an illegal command name.");
         }
