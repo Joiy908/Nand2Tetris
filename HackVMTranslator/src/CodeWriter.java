@@ -54,8 +54,8 @@ public class CodeWriter implements Closeable {
                 case BRANCHING:
                     writeBranching(command.name, command.arg1);
                     break;
-                case FUNCTION:
-                    writeFunction(command);
+                case METHOD:
+                    writeMethod(command);
                     break;
                 default:
                     throw new IllegalStateException("Unexpected type: " + command.type);
@@ -160,7 +160,7 @@ public class CodeWriter implements Closeable {
         out.write(lines.getBytes(OUT_FILE_CHARSET));
     }
 
-    private void writeFunction(Command command) throws IOException {
+    private void writeMethod(Command command) throws IOException {
         switch (command.name) {
             case "call":
                 writeCall(command.arg1, command.arg2);

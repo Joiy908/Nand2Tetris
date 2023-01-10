@@ -13,14 +13,14 @@ public class Command {
         PUSH,
         POP,
         BRANCHING,
-        FUNCTION
+        METHOD
     }
 
     public final static List<String> ARITHMETIC_COMMANDS = Arrays.asList("add", "sub", "neg",
             "and", "or", "not", "eq", "gt", "lt");
 
     public final static List<String> BRANCHING_COMMANDS = Arrays.asList("if-goto", "goto", "label");
-    public final static List<String> FUNCTION_COMMANDS = Arrays.asList("call", "function", "return");
+    public final static List<String> METHOD_COMMANDS = Arrays.asList("call", "function", "return");
 
     public final static HashMap<String, String> COMMON_SEGMENT = new HashMap<String, String>() {{
         put("local", "LCL");
@@ -75,13 +75,13 @@ public class Command {
         } else if (name.equals("pop")) {
             type = CommandType.POP;
         } else if (name.equals("return")) {
-            type = CommandType.FUNCTION;
+            type = CommandType.METHOD;
         } else if (ARITHMETIC_COMMANDS.contains(name)) {
             type = CommandType.ARITHMETIC;
         } else if (BRANCHING_COMMANDS.contains(name)) {
             type = CommandType.BRANCHING;
-        } else if (FUNCTION_COMMANDS.contains(name)) {
-            type = CommandType.FUNCTION;
+        } else if (METHOD_COMMANDS.contains(name)) {
+            type = CommandType.METHOD;
         } else {
             throw new IllegalArgumentException(name + " is an illegal command name.");
         }
