@@ -6,15 +6,13 @@ import java.util.Iterator;
  * @date 2022/12/31
  */
 
-public class Parser implements Iterable<Command> {
+public class Parser implements Iterator<Command>, Closeable {
 
-    // CommandIterator need to explicitly close
-    public static class CommandIterator implements Iterator<Command>, Closeable {
         private BufferedReader in;
         private String currLine;
         private Command currCommand;
 
-        public CommandIterator(File input) {
+        public Parser(File input) {
             try {
                 in = new BufferedReader(new FileReader(input));
             } catch (IOException e) {
@@ -79,21 +77,5 @@ public class Parser implements Iterable<Command> {
         private void advance() {
             currCommand = new Command(currLine.split(" "));
         }
-
-    }
-
-    private final File in;
-    public Parser(File in) {
-        this.in = in;
-    }
-
-    @Override
-    public Iterator<Command> iterator() {
-        return new CommandIterator(in);
-    }
-
-    public CommandIterator commandIterator() {
-        return new CommandIterator(in);
-    }
 
 }

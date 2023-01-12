@@ -27,11 +27,10 @@ public class Main {
             assert vmFiles != null;
             writer.writeInit();
             for (File vmFile : vmFiles) {
-                Parser p = new Parser(vmFile);
                 writer.setClassName(getClassName(vmFile.getName()));
-                try (Parser.CommandIterator itr = p.commandIterator()){
-                    while(itr.hasNext()) {
-                        writer.write(itr.next());
+                try (Parser p = new Parser(vmFile)){
+                    while(p.hasNext()) {
+                        writer.write(p.next());
                     }
                 }
             }
