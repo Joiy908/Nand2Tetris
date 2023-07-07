@@ -22,7 +22,7 @@ public class Main {
             vmFiles = new File[] {input};
         }
 
-        File out = new File(getSAMPath(input));
+        File out = new File(getASMPath(input));
         try(CodeWriter writer = new CodeWriter(out)) {
             assert vmFiles != null;
             writer.writeInit();
@@ -49,7 +49,7 @@ public class Main {
      * assume in.exists()
      * Xxx or Xxx.vm to Xxx.asm
      */
-    private static String getSAMPath(File in) {
+    private static String getASMPath(File in) {
         if(in.isFile()) {
             final int pos = in.getName().lastIndexOf('.');
             String rst = in.getName().substring(0, pos);
