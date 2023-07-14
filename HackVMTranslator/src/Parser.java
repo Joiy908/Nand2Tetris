@@ -51,9 +51,6 @@ public class Parser implements Iterator<Command>, Closeable {
          * @return null if line contains no command
          */
         private String rmComment(String line) {
-            if (line.isEmpty()){
-                return null;
-            }
             // else
             line = line.trim();
             if (line.isEmpty()) {
