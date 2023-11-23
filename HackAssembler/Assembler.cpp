@@ -60,7 +60,7 @@ void checkFileIsOpen(ios &f, string &fName);
 
 int main(int argc, char **args) {
   if (argc == 1) {
-    cerr << "please enter the asm file name." << endl;
+    cerr << "usage: "<< args[0] << " xxx.asm" << endl;
     return -1;
   }
   string filePath = args[1];
@@ -164,7 +164,7 @@ void filterLabel(stringstream &in, stringstream &out) {
       continue;
     }
     temp << buf << endl;
-    ++lineNum;
+    lineNum++;
   }
 
   int tempRNum = 16;
@@ -178,7 +178,7 @@ void filterLabel(stringstream &in, stringstream &out) {
         } else { // is a variable
           table.insert({addr, to_string(tempRNum)});
           out << '@' << tempRNum << endl;
-          ++tempRNum;
+          tempRNum++;
         }
         continue;
       }

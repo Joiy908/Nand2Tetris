@@ -1,3 +1,5 @@
 **/.idea
 **/out
 **.iml
+**/__pycache__
+**/.mypy_cache

@@ -46,6 +46,7 @@ std::pair<std::string, uint16_t> DEST_MAP[] = {
     {"AD",  0x30},
     {"AMD", 0x38}
 };
+
 std::pair<std::string, uint16_t> JUMP_MAP[] = {
     {{},    0x0},
     {"JGT", 0x1},
@@ -56,6 +57,7 @@ std::pair<std::string, uint16_t> JUMP_MAP[] = {
     {"JLE", 0x6},
     {"JMP", 0x7}
 };
+
 std::pair<std::string, uint16_t> COMP_MAP[] = {
     {{"0"}, 0xa80},
     {"1",   0xfc0},
