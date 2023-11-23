@@ -184,6 +184,7 @@ if __name__ == '__main__':
         print('%s is not a valid file path.' % argv[1])
 
     
+    # rmComment(file_name) | rm_labels | to_binary(out_name)
     out_name = argv[1].replace('.asm', '.hack')
     asms = rm_labels(rm_comment(argv[1]))
     to_binary(asms, out_name)
