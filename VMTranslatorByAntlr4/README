@@ -1,0 +1,7 @@
+
+# usage
+
+- run `antlr4 -no-listioner -visitor HackVM.g4` to generate auxiliary code
+- add antlr4-xx.jar as class path
+
+then run the code
